@@ -1,0 +1,32 @@
+#include <HID-Project.h>
+#include <HID-Settings.h>
+
+// Buffer for HID communication (Matches the 4 bytes sent from Python)
+uint8_t rawhidData[255]; 
+
+void setup() {
+  // HID Project's Mouse initialization
+  Mouse.begin();
+  
+  // Initialize RawHID to receive feature reports
+  // This does NOT create a COM port if Serial.begin is omitted
+  RawHID.begin(rawhidData, sizeof(rawhidData));
+}
+
+void loop() {
+  // Check if the Python script sent a movement packet
+  auto n = RawHID.available();
+  if (n > 0) {
+    RawHID.read(); // Loads the buffer with data from Python
+
+    // Byte 0 = move_x, Byte 1 = move_y
+    // We cast to int8_t to handle negative (left/up) movements
+    int8_t x_move = (int8_t)rawhidData[0];
+    int8_t y_move = (int8_t)rawhidData[1];
+
+    // Execute hardware-level movement
+    if (x_move != 0 || y_move != 0) {
+      Mouse.move(x_move, y_move, 0);
+    }
+  }
+}
